@@ -56,12 +56,12 @@ create_case_tables = MySqlOperator(
     mysql_conn_id = "mysql_default",
     sql = """CREATE TABLE covid19_cases (
     id SERIAL PRIMARY KEY,
-    個案研判日 date NOT NULL,
-    縣市 text,
-    性別 text,
-    境外移入 text,
-    年齡層 text,
-    確定病例數 int NOT NULL)""")
+    Date_Confirmation date NOT NULL,
+    County_Living text,
+    Gender text,
+    Imported text,
+    Age_Group text,
+    Number_of_Confirmed_Cases int NOT NULL)""")
 
 #Create create_covid19_suspects_tables task
 create_suspect_tables = MySqlOperator(
@@ -70,11 +70,11 @@ create_suspect_tables = MySqlOperator(
     mysql_conn_id = "mysql_default",
     sql = """CREATE TABLE covid19_suspects (
     id SERIAL,
-    通報日 date PRIMARY KEY,
-    法定監測送驗 int,
-    居家檢疫送驗 int,
-    擴大傳染病通報 int,
-    Total int NOT NULL)""")
+    Date_Reported date PRIMARY KEY,
+    Reported_Covid19 int,
+    Reported_Home_Quarantine int,
+    Reported_Enhanced_Surveillance int,
+    Total_Reported int NOT NULL)""")
 
 #Create create_covid19_vaccination_tables task
 create_vacc_tables = MySqlOperator(
@@ -82,12 +82,12 @@ create_vacc_tables = MySqlOperator(
     dag = dag,
     mysql_conn_id = "mysql_default",
     sql = """CREATE TABLE covid19_vaccination (
-        日期 date,
-        廠牌 VARCHAR(20) NOT NULL,
-        第一劑人數 int NOT NULL,
-        第二劑人數 int NOT NULL,
-        總人數 int NOT NULL,
-        PRIMARY KEY(日期,廠牌))""")
+        Date date,
+        Brand VARCHAR(20) NOT NULL,
+        First_Dose_Daily int NOT NULL,
+        Second_Dose_Daily int NOT NULL,
+        Total_Daily int NOT NULL,
+        PRIMARY KEY(Date,Brand))""")
 
 #Insert Daily Cases table
 load_case_table = LoadCasesOperator(
