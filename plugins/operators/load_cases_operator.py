@@ -26,7 +26,7 @@ class LoadCasesOperator(BaseOperator):
 
         #Create Pandas dataframe for 
         case_table = pd.read_json('https://od.cdc.gov.tw/eic/Day_Confirmation_Age_County_Gender_19CoV.json')
-        sql_insert = """INSERT INTO covid19_cases (個案研判日, 縣市, 性別, 境外移入, 年齡層, 確定病例數) VALUES """
+        sql_insert = """INSERT INTO covid19_cases (Date_Confirmation, County_Living, Gender, Imported, Age_Group, Number_of_Confirmed_Cases) VALUES """
         
         for values in case_table.values:    
            sql_insert = sql_insert + "('{}','{}','{}','{}','{}',{}),".format(values[1],values[2],values[4],values[5],values[6],values[7])

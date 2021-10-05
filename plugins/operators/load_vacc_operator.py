@@ -30,17 +30,11 @@ class LoadVaccOperator(BaseOperator):
         self.log.info("Finish retrieving original data")
 
         self.log.info("Start writing vaccination table to MySql")
-        sql_insert = """INSERT INTO covid19_vaccination (日期,廠牌,第一劑人數,第二劑人數,總人數) VALUES """
+        sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily,Total_Daily) VALUES """
         
         for values in vacc_table.values:    
-           sql_insert = sql_insert + "('{}','{}',{},{},{}),".format(values[2], values[3], values[4], values[5], values[6])
+           sql_insert = sql_insert + "('{}','{}',{},{},{}),".format(values[2], values[3], values[7], values[8], values[9])
 
         mysql_hook.run(sql_insert[:-1])
 
-
-        #for values in vacc_table.values:
-        #     mysql_hook.run("""
-        #                    INSERT INTO covid19_vaccination (id,國家,日期,廠牌,第一劑人數,第二劑人數,總人數)
-        #                    VALUES ({},'{}','{}','{}',{},{},{})
-         #                   """.format(values[0], values[1], values[2], values[3], values[4], values[5], values[6]))
         self.log.info("Finish loading vaccination table")

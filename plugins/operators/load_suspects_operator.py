@@ -26,7 +26,7 @@ class LoadSuspectsOperator(BaseOperator):
 
         #Create Pandas dataframe for 
         suspect_table = pd.read_csv('https://od.cdc.gov.tw/eic/covid19/covid19_tw_specimen.csv')
-        sql_insert = """INSERT INTO covid19_suspects (通報日, 法定監測送驗, 居家檢疫送驗, 擴大傳染病通報, Total) VALUES """
+        sql_insert = """INSERT INTO covid19_suspects (Date_Reported, Reported_Covid19, Reported_Home_Quarantine, Reported_Enhanced_Surveillance, Total_Reported) VALUES """
         
         for values in suspect_table.values:    
            sql_insert = sql_insert + "('{}',{},{},{},{}),".format(values[0],values[1],values[2],values[3],values[4])
