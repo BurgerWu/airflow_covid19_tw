@@ -49,7 +49,15 @@ class LoadTableFunctions:
         vacc_table['First Dose Accumulate'] = vacc_table['First Dose Accumulate'].astype(int)
         vacc_table['Second Dose Accumulate'] = vacc_table['Second Dose Accumulate'].astype(int)
         vacc_table['Total Vaccination'] = vacc_table['Total Vaccination'].astype(int)
-    
+
+        #Calculate daily vaccination counts
+        vacc_table['fd'] = vacc_table.sort_values('Date').groupby('Brand')['First Dose Accumulate'].shift(1).fillna(0)
+        vacc_table['sd'] = vacc_table.sort_values('Date').groupby('Brand')['Second Dose Accumulate'].shift(1).fillna(0)
+        vacc_table['First Dose Daily'] = vacc_table['First Dose Accumulate'] - vacc_table['fd']
+        vacc_table['Second Dose Daily'] = vacc_table['Second Dose Accumulate'] - vacc_table['sd']
+        vacc_table['Total Vaccinated Daily'] = vacc_table['First Dose Daily'] + vacc_table['Second Dose Daily']
+        vacc_table = vacc_table.drop(labels=['fd','sd'],axis=1)
+        
         #Return target vaccination table
         return vacc_table
 
