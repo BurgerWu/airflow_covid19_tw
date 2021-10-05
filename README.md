@@ -11,3 +11,11 @@ This repository contains dags folder and plugins required to complete the projec
 For installation of Airflow 
 
 1. Define mysql connection in Airflow 
+
+
+## Data Workflow
+1. DAGs:
+- initiate_db: 
+- update_case
+- update_suspects
+- update_vaccination
