@@ -2,7 +2,7 @@ import requests
 import re 
 import pandas as pd
 class LoadTableFunctions:
-    def get_vaccination_table(url):
+    def get_vaccination_table(url, type = 'daily'):
         """
         This function retrieves vaccination information from National Center for High-Performance Computing (NCHC) 
         along with the help of text manipulation to get original table.
@@ -10,8 +10,11 @@ class LoadTableFunctions:
         Input: Target URL
         Output: Latest vaccination table
         """
+        if type not in ['daily', 'accumulated']:
+            raise ValueError("Input for type should be either daily or accumulated")
+
         #Pre-defined column names
-        column_dict = {'id': 'id', 'a01': 'Country', 'a02': 'Date', 'a03':'Brand', 'a04':'First Dose Accumulate', 'a05': 'Second Dose Accumulate', 'a06':'Total Vaccination'}
+        column_dict = {'id': 'id', 'a01': 'Country', 'a02': 'Date', 'a03':'Brand', 'a04':'First_Dose_Accumulate', 'a05': 'Second_Dose_Accumulate', 'a06':'Total_Vaccination'}
         brand_dict = {'Oxford\/AstraZeneca': 'AstraZeneca', '高端': 'Medigen', 'BNT': 'BNT', 'Moderna':'Moderna'}
 
         #Use get method in requests to acquire vaccination data
@@ -45,19 +48,21 @@ class LoadTableFunctions:
     
         #Convert datatype to correct ones
         vacc_table['id'] = vacc_table['id'].astype(int)
-        #vacc_table['Date'] = vacc_table['Date'].astype('datetime64[ns]')
-        vacc_table['First Dose Accumulate'] = vacc_table['First Dose Accumulate'].astype(int)
-        vacc_table['Second Dose Accumulate'] = vacc_table['Second Dose Accumulate'].astype(int)
-        vacc_table['Total Vaccination'] = vacc_table['Total Vaccination'].astype(int)
+        vacc_table['First_Dose_Accumulate'] = vacc_table['First_Dose_Accumulate'].astype(int)
+        vacc_table['Second_Dose_Accumulate'] = vacc_table['Second_Dose_Accumulate'].astype(int)
+        vacc_table['Total_Vaccination'] = vacc_table['Total_Vaccination'].astype(int)
 
-        #Calculate daily vaccination counts
-        vacc_table['fd'] = vacc_table.sort_values('Date').groupby('Brand')['First Dose Accumulate'].shift(1).fillna(0)
-        vacc_table['sd'] = vacc_table.sort_values('Date').groupby('Brand')['Second Dose Accumulate'].shift(1).fillna(0)
-        vacc_table['First Dose Daily'] = vacc_table['First Dose Accumulate'] - vacc_table['fd']
-        vacc_table['Second Dose Daily'] = vacc_table['Second Dose Accumulate'] - vacc_table['sd']
-        vacc_table['Total Vaccinated Daily'] = vacc_table['First Dose Daily'] + vacc_table['Second Dose Daily']
-        vacc_table = vacc_table.drop(labels=['fd','sd'],axis=1)
-        
+        if type == 'daily':
+            #Calculate daily vaccination counts
+            vacc_table['fd'] = vacc_table.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1).fillna(0)
+            vacc_table['sd'] = vacc_table.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1).fillna(0)
+            vacc_table['First_Dose_Daily'] = vacc_table['First_Dose_Accumulate'] - vacc_table['fd']
+            vacc_table['Second_Dose_Daily'] = vacc_table['Second_Dose_Accumulate'] - vacc_table['sd']
+            vacc_table['Total_Vaccinated_Daily'] = vacc_table['First_Dose_Daily'] + vacc_table['Second_Dose_Daily']
+            vacc_table = vacc_table.drop(labels=['fd','sd'],axis=1)
+        else:
+            pass
+
         #Return target vaccination table
         return vacc_table
 

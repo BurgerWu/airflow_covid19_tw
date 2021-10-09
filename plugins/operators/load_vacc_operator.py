@@ -30,7 +30,7 @@ class LoadVaccOperator(BaseOperator):
         self.log.info("Finish retrieving original data")
 
         self.log.info("Start writing vaccination table to MySql")
-        sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily,Total_Daily) VALUES """
+        sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily,Total_Vaccinated_Daily) VALUES """
         
         for values in vacc_table.values:    
            sql_insert = sql_insert + "('{}','{}',{},{},{}),".format(values[2], values[3], values[7], values[8], values[9])

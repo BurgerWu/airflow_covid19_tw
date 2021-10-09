@@ -27,12 +27,12 @@ class UpdateCasesTableOperator(BaseOperator):
 
         #Create Pandas dataframe for 
         case_table = pd.read_json('https://od.cdc.gov.tw/eic/Day_Confirmation_Age_County_Gender_19CoV.json')
-        case_table['Date_Confirmation'] = pd.to_datetime(case_table['Date_Confirmation'])
+        case_table.iloc[:,1] = pd.to_datetime(case_table.iloc[:,1])
         sql_insert = """INSERT INTO covid19_cases (Date_Confirmation, County_Living, Gender, Imported, Age_Group, Number_of_Confirmed_Cases) VALUES """
         
         latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_case', key = 'latest'), '%Y-%m-%d')
         
-        to_update_case = case_table[case_table['Date_Confirmation'] > datetime(latest_record.year, latest_record.month, latest_record.day)]
+        to_update_case = case_table[case_table.iloc[:,1] > datetime(latest_record.year, latest_record.month, latest_record.day)]
         
         for values in to_update_case.values:    
             sql_insert = sql_insert + "('{}','{}','{}','{}','{}',{}),".format(values[1],values[2],values[4],values[5],values[6],values[7])

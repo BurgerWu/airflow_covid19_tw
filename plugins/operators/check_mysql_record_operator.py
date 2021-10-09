@@ -30,13 +30,13 @@ class CheckMySqlRecordOperator(BaseOperator):
         if self.table in ['cases', 'suspects', 'vaccination']:
             table_of_interest = "covid19_{}".format(self.table)
             if self.table == 'vaccination':
-                latest = mysql_hook.get_first("SELECT max(日期) FROM {}".format(table_of_interest))[0]
+                latest = mysql_hook.get_first("SELECT max(Date) FROM {}".format(table_of_interest))[0]
                 latest_str = latest.strftime("%Y-%m-%d")
             elif self.table == 'suspects':
-                latest = mysql_hook.get_first("SELECT max(通報日) FROM {}".format(table_of_interest))[0]
+                latest = mysql_hook.get_first("SELECT max(Date_Reported) FROM {}".format(table_of_interest))[0]
                 latest_str = latest.strftime("%Y-%m-%d")
             else:
-                latest = mysql_hook.get_first("SELECT max(個案研判日) FROM {}".format(table_of_interest))[0]
+                latest = mysql_hook.get_first("SELECT max(Date_Confirmation) FROM {}".format(table_of_interest))[0]
                 latest_str = latest.strftime("%Y-%m-%d")
         else:
             raise ValueError("The input value of table is invalid, you should type either cases, suspects or vaccination")

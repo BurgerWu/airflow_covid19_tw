@@ -27,12 +27,12 @@ class UpdateSuspectsTableOperator(BaseOperator):
 
         #Create Pandas dataframe for 
         suspect_table = pd.read_csv('https://od.cdc.gov.tw/eic/covid19/covid19_tw_specimen.csv')
-        suspect_table['Date_Reported'] = pd.to_datetime(suspect_table['Date_Reported'])
+        suspect_table.iloc[:,0] = pd.to_datetime(suspect_table.iloc[:,0])
         sql_insert = """INSERT INTO covid19_suspects (Date_Reported, Reported_Covid19, Reported_Home_Quarantine, Reported_Enhanced_Surveillance, Total_Reported) VALUES """
         
         latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_suspect', key = 'latest'), '%Y-%m-%d')
         
-        to_update_suspect = suspect_table[suspect_table['Date_Reported'] > datetime(latest_record.year, latest_record.month, latest_record.day) - timedelta(3)]
+        to_update_suspect = suspect_table[suspect_table.iloc[:,0] > datetime(latest_record.year, latest_record.month, latest_record.day) - timedelta(3)]
         
         for values in to_update_suspect.values:    
            sql_insert = sql_insert + "('{}',{},{},{},{}),".format(values[0],values[1],values[2],values[3],values[4])
