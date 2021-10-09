@@ -12,7 +12,7 @@ from operators.load_suspects_operator import LoadSuspectsOperator
 
 #Create default argument for dag
 default_args = {
-    'owner': 'burger_wu',
+    'owner': 'aritek',
     'start_date': datetime.utcnow(),
     'depends_on_past': False,
     'catchup': False,
@@ -86,7 +86,7 @@ create_vacc_tables = MySqlOperator(
         Brand VARCHAR(20) NOT NULL,
         First_Dose_Daily int NOT NULL,
         Second_Dose_Daily int NOT NULL,
-        Total_Daily int NOT NULL,
+        Total_Vaccinated_Daily int NOT NULL,
         PRIMARY KEY(Date,Brand))""")
 
 #Insert Daily Cases table
