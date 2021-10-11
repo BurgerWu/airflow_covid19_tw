@@ -1,7 +1,45 @@
 import requests
 import re 
 import pandas as pd
+from datetime import datetime, timedelta
+
+
 class LoadTableFunctions:
+    def translate_case_column(df):
+        county_dict = {
+            "彰化縣":"Changhua County",
+            "南投縣":"Nantou County",
+            "台中市":"Taichung City",
+            "新北市":"New Taipei City",
+            "桃園市":"Taoyuan City",
+            "台南市":"Tainan City",
+            "台北市":"Taipei City",
+            "新竹市":"Hsinchu City",
+            "基隆市":"Keelung County",
+            "宜蘭縣":"Yilan County",
+            "高雄市":"Kaohsiung City",
+            "新竹縣":"Hsinchu County",
+            "苗栗縣":"Miaoli County",
+            "雲林縣":"Yunlin County",
+            "屏東縣":"Pingtung County",
+            "花蓮縣":"Hualien County",
+            "嘉義市":"Chiayi City",
+            "嘉義縣":"Chiayi County",
+            "台東縣":"Taitung County",
+            "連江縣":"Lienchian County",
+            "澎湖縣":"Penghu County"}
+        imported_dict = {"是":1, "否":0}
+        gender_dict = {"男":"male","女":"female"}
+
+        df['縣市'] = df['縣市'].map(county_dict)
+        df['縣市'] = df['縣市'].fillna("Imported")
+
+        df['性別'] = df['性別'].map(gender_dict)
+
+        df['是否為境外移入'] = df['是否為境外移入'].map(imported_dict)
+
+        return df
+
     def get_vaccination_table(url, type = 'daily'):
         """
         This function retrieves vaccination information from National Center for High-Performance Computing (NCHC) 
@@ -66,5 +104,42 @@ class LoadTableFunctions:
         #Return target vaccination table
         return vacc_table
 
+    def get_mysql_table(mysql_connection, to_update_date_str):
+        with mysql_connection.cursor() as cursor:
+            sql = """SELECT Brand, max(Date) AS Date,
+                     sum(First_Dose_Daily) AS First_Dose_Accumulate,
+                     sum(Second_Dose_Daily) AS Second_Dose_Accumulate 
+                     FROM covid19_vaccination 
+                     WHERE Date <= '{}'
+                     GROUP BY (Brand)""".format(to_update_date_str)
+
+            cursor.execute(sql)
+            result=cursor.fetchall()
+        
+        return result
+
+    def get_daily_result(vacc_table, to_update_date, mysql_accu_dict):
+        to_update_vacc = vacc_table[vacc_table['Date'] > to_update_date]
+        to_update_vacc['fd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1)
+        to_update_vacc['sd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1)
+        to_update_brands = list(to_update_vacc[to_update_vacc['fd'].isna()]['Brand'].unique())
+        
+        for items in mysql_accu_dict:
+            if items['Brand'] in to_update_brands:
+                to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['First_Dose_Accumulate'])
+                to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Second_Dose_Accumulate'])
+                to_update_brands.remove(items['Brand'])
+
+        if len(to_update_brands) != 0:
+            for brand in to_update_brands:
+                to_update_vacc['fd'][to_update_vacc['Brand'] == brand] = to_update_vacc['fd'][to_update_vacc['Brand'] == brand].fillna(0)
+                to_update_vacc['sd'][to_update_vacc['Brand'] == brand] = to_update_vacc['sd'][to_update_vacc['Brand'] == brand].fillna(0)
+
+        to_update_vacc['First_Dose_Daily'] = to_update_vacc['First_Dose_Accumulate'] - to_update_vacc['fd']
+        to_update_vacc['Second_Dose_Daily'] = to_update_vacc['Second_Dose_Accumulate'] - to_update_vacc['sd']
+        to_update_vacc['Total_Vaccinated_Daily'] = to_update_vacc['First_Dose_Daily'] + to_update_vacc['Second_Dose_Daily']
+        to_update_vacc = to_update_vacc.drop(labels=['fd','sd'],axis=1)
+
+        return to_update_vacc
 
     

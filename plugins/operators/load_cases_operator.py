@@ -2,6 +2,7 @@ from airflow.hooks.mysql_hook import MySqlHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 import pandas as pd
+from helpers import LoadTableFunctions
 
 class LoadCasesOperator(BaseOperator):
     """
@@ -26,6 +27,7 @@ class LoadCasesOperator(BaseOperator):
 
         #Create Pandas dataframe for 
         case_table = pd.read_json('https://od.cdc.gov.tw/eic/Day_Confirmation_Age_County_Gender_19CoV.json')
+        case_table = LoadTableFunctions.translate_case_column(case_table)
         sql_insert = """INSERT INTO covid19_cases (Date_Confirmation, County_Living, Gender, Imported, Age_Group, Number_of_Confirmed_Cases) VALUES """
         
         for values in case_table.values:    

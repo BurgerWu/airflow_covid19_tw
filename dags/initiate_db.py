@@ -59,7 +59,7 @@ create_case_tables = MySqlOperator(
     Date_Confirmation date NOT NULL,
     County_Living text,
     Gender text,
-    Imported text,
+    Imported boolean,
     Age_Group text,
     Number_of_Confirmed_Cases int NOT NULL)""")
 

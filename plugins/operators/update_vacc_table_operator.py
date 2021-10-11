@@ -19,43 +19,6 @@ class UpdateVaccTableOperator(BaseOperator):
 
         super(UpdateVaccTableOperator, self).__init__(*args, **kwargs)
         self.db_conn_id = db_conn_id
-    def get_mysql_table(self, mysql_connection, to_update_date_str):
-        with mysql_connection.cursor() as cursor:
-            sql = """SELECT Brand, max(Date) AS Date,
-                     sum(First_Dose_Daily) AS First_Dose_Accumulate,
-                     sum(Second_Dose_Daily) AS Second_Dose_Accumulate 
-                     FROM covid19_vaccination 
-                     WHERE Date <= '{}'
-                     GROUP BY (Brand)""".format(to_update_date_str)
-
-            cursor.execute(sql)
-            result=cursor.fetchall()
-        
-        return result
-
-    def get_daily_result(self, vacc_table, to_update_date, mysql_accu_dict):
-        to_update_vacc = vacc_table[vacc_table['Date'] > to_update_date]
-        to_update_vacc['fd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1)
-        to_update_vacc['sd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1)
-        to_update_brands = list(to_update_vacc[to_update_vacc['fd'].isna()]['Brand'].unique())
-        
-        for items in mysql_accu_dict:
-            if items['Brand'] in to_update_brands:
-                to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['First_Dose_Accumulate'])
-                to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Second_Dose_Accumulate'])
-                to_update_brands.remove(items['Brand'])
-
-        if len(to_update_brands) != 0:
-            for brand in to_update_brands:
-                to_update_vacc['fd'][to_update_vacc['Brand'] == brand] = to_update_vacc['fd'][to_update_vacc['Brand'] == brand].fillna(0)
-                to_update_vacc['sd'][to_update_vacc['Brand'] == brand] = to_update_vacc['sd'][to_update_vacc['Brand'] == brand].fillna(0)
-
-        to_update_vacc['First_Dose_Daily'] = to_update_vacc['First_Dose_Accumulate'] - to_update_vacc['fd']
-        to_update_vacc['Second_Dose_Daily'] = to_update_vacc['Second_Dose_Accumulate'] - to_update_vacc['sd']
-        to_update_vacc['Total_Vaccinated_Daily'] = to_update_vacc['First_Dose_Daily'] + to_update_vacc['Second_Dose_Daily']
-        to_update_vacc = to_update_vacc.drop(labels=['fd','sd'],axis=1)
-
-        return to_update_vacc
 
     def execute(self, context):
         """
@@ -74,9 +37,9 @@ class UpdateVaccTableOperator(BaseOperator):
         to_update_date = datetime(latest_record.year, latest_record.month, latest_record.day) - timedelta(3)
         to_update_date_str = datetime.strftime(to_update_date, "%Y-%m-%d")
 
-        mysql_accu_dict = self.get_mysql_table(mysql_connection, to_update_date_str)
+        mysql_accu_dict = LoadTableFunctions.get_mysql_table(mysql_connection, to_update_date_str)
 
-        to_update_vacc = self.get_daily_result(vacc_table, to_update_date, mysql_accu_dict)
+        to_update_vacc = LoadTableFunctions.get_daily_result(vacc_table, to_update_date, mysql_accu_dict)
        
         sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily,Total_Vaccinated_Daily) VALUES """
 
