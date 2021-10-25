@@ -1,3 +1,4 @@
+#import libraries
 from datetime import datetime, timedelta
 import requests
 import re
@@ -20,6 +21,7 @@ default_args = {
     'retry_delay': timedelta(minutes = 2)
 }
 
+#Create dag instance
 dag = DAG('initiate_database',
           default_args = default_args,
           description = 'Initiate database with desired schema',
@@ -69,12 +71,10 @@ create_suspect_tables = MySqlOperator(
     dag = dag,
     mysql_conn_id = "mysql_default",
     sql = """CREATE TABLE covid19_suspects (
-    id SERIAL,
     Date_Reported date PRIMARY KEY,
     Reported_Covid19 int,
     Reported_Home_Quarantine int,
-    Reported_Enhanced_Surveillance int,
-    Total_Reported int NOT NULL)""")
+    Reported_Enhanced_Surveillance int)""")
 
 #Create create_covid19_vaccination_tables task
 create_vacc_tables = MySqlOperator(
@@ -86,7 +86,6 @@ create_vacc_tables = MySqlOperator(
         Brand VARCHAR(20) NOT NULL,
         First_Dose_Daily int NOT NULL,
         Second_Dose_Daily int NOT NULL,
-        Total_Vaccinated_Daily int NOT NULL,
         PRIMARY KEY(Date,Brand))""")
 
 #Insert Daily Cases table
@@ -110,6 +109,7 @@ load_vacc_table = LoadVaccOperator(
 #Create end_operator task
 end_operator = DummyOperator(task_id = 'Stop_execution',  dag=dag)
 
+##Schedule downstream sequence relationship between tasks
 drop_case_tables.set_downstream(create_case_tables)
 drop_suspect_tables.set_downstream(create_suspect_tables)
 drop_vacc_tables.set_downstream(create_vacc_tables)

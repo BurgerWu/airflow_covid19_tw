@@ -1,3 +1,4 @@
+#import libraries
 import requests
 import re 
 import pandas as pd
@@ -5,7 +6,16 @@ from datetime import datetime, timedelta
 
 
 class LoadTableFunctions:
+    """
+    LoadTableFunctions class contains custom functions required for processing covid19 raw data
+    """
     def translate_case_column(df):
+        """
+        This functions translates columns in case table from Chinese to English
+        Input: Targer dataframe
+        Output: Translated dataframe
+        """
+        #Define translation dictionary
         county_dict = {
             "彰化縣":"Changhua County",
             "南投縣":"Nantou County",
@@ -28,16 +38,24 @@ class LoadTableFunctions:
             "台東縣":"Taitung County",
             "連江縣":"Lienchian County",
             "澎湖縣":"Penghu County"}
+
+        #Define imported dictionary
         imported_dict = {"是":1, "否":0}
+
+        #Define gender dictionary
         gender_dict = {"男":"male","女":"female"}
 
+        #Map county column in raw dataframe with dictionary and fill NA as imported cases
         df['縣市'] = df['縣市'].map(county_dict)
         df['縣市'] = df['縣市'].fillna("Imported")
-
+        
+        #Map gender column in raw dataframe with dictionary 
         df['性別'] = df['性別'].map(gender_dict)
 
+        #Map imported column in raw dataframe with dictionary
         df['是否為境外移入'] = df['是否為境外移入'].map(imported_dict)
 
+        #Return translated dataframe
         return df
 
     def get_vaccination_table(url, type = 'daily'):
@@ -48,6 +66,7 @@ class LoadTableFunctions:
         Input: Target URL
         Output: Latest vaccination table
         """
+        #Check if type input is valid, if not, return error message
         if type not in ['daily', 'accumulated']:
             raise ValueError("Input for type should be either daily or accumulated")
 
@@ -99,12 +118,19 @@ class LoadTableFunctions:
             vacc_table['Total_Vaccinated_Daily'] = vacc_table['First_Dose_Daily'] + vacc_table['Second_Dose_Daily']
             vacc_table = vacc_table.drop(labels=['fd','sd'],axis=1)
         else:
+            #Do not modify if type is accumulated
             pass
 
         #Return target vaccination table
         return vacc_table
 
-    def get_mysql_table(mysql_connection, to_update_date_str):
+    def get_mysql_vacc_accumulated_dict(mysql_connection, to_update_date_str):
+        """
+        This function returns accumulated vaccination data before to_update_date
+        Input: Mysql connection and to_update_date in string
+        Output: Returned result from Mysql
+        """
+        #Build connection with mysql 
         with mysql_connection.cursor() as cursor:
             sql = """SELECT Brand, max(Date) AS Date,
                      sum(First_Dose_Daily) AS First_Dose_Accumulate,
@@ -112,29 +138,40 @@ class LoadTableFunctions:
                      FROM covid19_vaccination 
                      WHERE Date <= '{}'
                      GROUP BY (Brand)""".format(to_update_date_str)
-
+            #Run the SQL command and fetch all results
             cursor.execute(sql)
             result=cursor.fetchall()
         
         return result
 
-    def get_daily_result(vacc_table, to_update_date, mysql_accu_dict):
+    def transform_to_daily_result(vacc_table, to_update_date, mysql_accu_dict):
+        """
+        This function returns the subset of vaccinaion table according to to_update date
+        Input: Original vacciantion table, date to update and dictionary of accumulated vaccination data retrieved from mysql 
+        Output: Vaccination table required for updating database
+        """
+        #Retrieve subset of dataframe after to_update_date
         to_update_vacc = vacc_table[vacc_table['Date'] > to_update_date]
+
+        #Shift accumulated data one row backward so that we can calculate daily data later 
         to_update_vacc['fd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1)
         to_update_vacc['sd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1)
         to_update_brands = list(to_update_vacc[to_update_vacc['fd'].isna()]['Brand'].unique())
         
+        #To populate accumulate data for the first row in our subset of to_update table
         for items in mysql_accu_dict:
             if items['Brand'] in to_update_brands:
                 to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['First_Dose_Accumulate'])
                 to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Second_Dose_Accumulate'])
                 to_update_brands.remove(items['Brand'])
 
+        #If there is a new added vaccine, we put 0 as the accumulated data for the first day
         if len(to_update_brands) != 0:
             for brand in to_update_brands:
                 to_update_vacc['fd'][to_update_vacc['Brand'] == brand] = to_update_vacc['fd'][to_update_vacc['Brand'] == brand].fillna(0)
                 to_update_vacc['sd'][to_update_vacc['Brand'] == brand] = to_update_vacc['sd'][to_update_vacc['Brand'] == brand].fillna(0)
 
+        #Subtract accumulated data with accumulated data one day before to get daily data on that day
         to_update_vacc['First_Dose_Daily'] = to_update_vacc['First_Dose_Accumulate'] - to_update_vacc['fd']
         to_update_vacc['Second_Dose_Daily'] = to_update_vacc['Second_Dose_Accumulate'] - to_update_vacc['sd']
         to_update_vacc['Total_Vaccinated_Daily'] = to_update_vacc['First_Dose_Daily'] + to_update_vacc['Second_Dose_Daily']

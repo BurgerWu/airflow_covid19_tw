@@ -1,3 +1,4 @@
+#import libraries
 from datetime import datetime, timedelta
 import pandas as pd
 from airflow import DAG
@@ -17,6 +18,7 @@ default_args = {
     'retry_delay': timedelta(minutes = 2)
 }
 
+#Create dag instance
 dag = DAG('update_suspects',
           default_args = default_args,
           description = 'Update covid19 suspects table',
@@ -32,6 +34,7 @@ check_latest_suspect = CheckMySqlRecordOperator(
     db_conn_id = "mysql_default",
     table = 'suspects')
 
+#update suspects table based on latest record
 update_suspects = UpdateSuspectsTableOperator(
     task_id = 'Update_suspect_table',
     dag = dag,

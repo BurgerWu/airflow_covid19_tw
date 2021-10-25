@@ -1,3 +1,4 @@
+#import libraries
 from datetime import datetime, timedelta
 import pandas as pd
 from airflow import DAG
@@ -17,6 +18,7 @@ default_args = {
     'retry_delay': timedelta(minutes = 2)
 }
 
+#Create dag instance
 dag = DAG('update_cases',
           default_args = default_args,
           description = 'Update covid19 cases table',
@@ -32,6 +34,7 @@ check_latest_case = CheckMySqlRecordOperator(
     db_conn_id = "mysql_default",
     table = 'cases')
 
+#Update cases table depending on latest record
 update_cases = UpdateCasesTableOperator(
     task_id = 'Update_cases_table',
     dag = dag,
@@ -41,4 +44,5 @@ update_cases = UpdateCasesTableOperator(
 #Create start_operator task
 end_operator = DummyOperator(task_id = 'End_execution',  dag = dag)
 
+#Schedule sequential relationship between tasks
 start_operator >> check_latest_case >> update_cases >> end_operator
