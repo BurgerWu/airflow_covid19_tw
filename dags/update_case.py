@@ -7,6 +7,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from operators.check_mysql_record_operator import CheckMySqlRecordOperator
 from operators.update_cases_table_operator import UpdateCasesTableOperator
+from operators.data_quality_check_operator import DataQualityCheckOperator
 
 #Create default argument for dag
 default_args = {
@@ -28,8 +29,8 @@ dag = DAG('update_cases',
 start_operator = DummyOperator(task_id = 'Begin_execution',  dag = dag)
 
 #Check latest record first
-check_latest_case = CheckMySqlRecordOperator(
-    task_id = 'Check_latest_case',
+check_latest_cases = CheckMySqlRecordOperator(
+    task_id = 'Check_latest_cases',
     dag = dag,
     db_conn_id = "mysql_default",
     table = 'cases')
@@ -41,8 +42,16 @@ update_cases = UpdateCasesTableOperator(
     db_conn_id = 'mysql_default'
 )
 
+#Perform data quality check for cases table
+check_cases_update = DataQualityCheckOperator(
+    task_id = 'Check_cases_update',
+    dag = dag,
+    db_conn_id = 'mysql_default',
+    loadorupdate = 'update',
+    table = 'cases')
+
 #Create start_operator task
 end_operator = DummyOperator(task_id = 'End_execution',  dag = dag)
 
 #Schedule sequential relationship between tasks
-start_operator >> check_latest_case >> update_cases >> end_operator
+start_operator >> check_latest_cases >> update_cases >> check_cases_update >> end_operator

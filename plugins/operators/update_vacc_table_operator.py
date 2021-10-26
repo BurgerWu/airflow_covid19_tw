@@ -36,7 +36,7 @@ class UpdateVaccTableOperator(BaseOperator):
 
         #Get latest record by retrieving xcom record from other operator
         #Here we will update from 3 days before latest record to ensure any updated data is tracked
-        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_vacc', key = 'latest'), '%Y-%m-%d')
+        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_vaccination', key = 'latest_vaccination'), '%Y-%m-%d')
         to_update_date = datetime(latest_record.year, latest_record.month, latest_record.day) - timedelta(3)
         to_update_date_str = datetime.strftime(to_update_date, "%Y-%m-%d")
         

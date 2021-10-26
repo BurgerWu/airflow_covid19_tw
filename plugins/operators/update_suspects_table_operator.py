@@ -31,7 +31,7 @@ class UpdateSuspectsTableOperator(BaseOperator):
         suspect_table.iloc[:,0] = pd.to_datetime(suspect_table.iloc[:,0])
         
         #Get latest record by retrieving xcom record from other operator
-        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_suspect', key = 'latest'), '%Y-%m-%d')
+        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_suspects', key = 'latest_suspects'), '%Y-%m-%d')
         
         #Initiate SQL insert command
         sql_insert = """INSERT INTO covid19_suspects (Date_Reported, Reported_Covid19, Reported_Home_Quarantine, Reported_Enhanced_Surveillance) VALUES """

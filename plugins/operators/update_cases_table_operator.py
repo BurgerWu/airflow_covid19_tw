@@ -33,7 +33,7 @@ class UpdateCasesTableOperator(BaseOperator):
         case_table.iloc[:,1] = pd.to_datetime(case_table.iloc[:,1])
         
         #Get latest record by retrieving xcom record from other operator
-        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_case', key = 'latest'), '%Y-%m-%d')
+        latest_record = datetime.strptime(context['task_instance'].xcom_pull(task_ids = 'Check_latest_cases', key = 'latest_cases'), '%Y-%m-%d')
         
         #Get to update table from original table according to latest record
         to_update_case = case_table[case_table.iloc[:,1] > datetime(latest_record.year, latest_record.month, latest_record.day)]

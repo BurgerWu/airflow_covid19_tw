@@ -9,7 +9,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from operators.load_vacc_operator import LoadVaccOperator
 from operators.load_cases_operator import LoadCasesOperator
 from operators.load_suspects_operator import LoadSuspectsOperator
-
+from operators.data_quality_check_operator import DataQualityCheckOperator
 
 #Create default argument for dag
 default_args = {
@@ -106,6 +106,30 @@ load_vacc_table = LoadVaccOperator(
     dag = dag,
     db_conn_id = "mysql_default")
 
+#Insert Vaccination table
+check_case_table = DataQualityCheckOperator(
+    task_id = "Check_case_table",
+    dag = dag,
+    db_conn_id = "mysql_default",
+    loadorupdate = 'load',
+    table = 'cases')
+
+#Insert Vaccination table
+check_suspect_table = DataQualityCheckOperator(
+    task_id = "Check_suspect_table",
+    dag = dag,
+    db_conn_id = "mysql_default",
+    loadorupdate = 'load',
+    table = 'suspects')
+
+    #Insert Vaccination table
+check_vacc_table = DataQualityCheckOperator(
+    task_id = "Check_vaccination_table",
+    dag = dag,
+    db_conn_id = "mysql_default",
+    loadorupdate = 'load',
+    table = 'vaccination')
+
 #Create end_operator task
 end_operator = DummyOperator(task_id = 'Stop_execution',  dag=dag)
 
@@ -116,7 +140,11 @@ drop_vacc_tables.set_downstream(create_vacc_tables)
 create_case_tables.set_downstream(load_case_table)
 create_suspect_tables.set_downstream(load_suspect_table)
 create_vacc_tables.set_downstream(load_vacc_table)
+load_case_table.set_downstream(check_case_table)
+load_suspect_table.set_downstream(check_suspect_table)
+load_vacc_table.set_downstream(check_vacc_table)
+
 
 #Schedule sequential relationship between tasks
 start_operator >> [drop_case_tables, drop_suspect_tables, drop_vacc_tables] 
-[load_case_table, load_suspect_table, load_vacc_table] >> end_operator
+[check_case_table, check_suspect_table, check_vacc_table] >> end_operator

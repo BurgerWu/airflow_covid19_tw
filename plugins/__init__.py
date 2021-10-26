@@ -7,5 +7,6 @@ import helpers
 #Define the plugin class
 class MyPlugins(AirflowPlugin):
     name = "my_plugin"
-    operators = [operators.TestOperator, operators.LoadVaccOperator, operators.LoadCasesOperator, operators.LoadSuspectsOperator, operators.CheckMySqlRecordOperator, operators.UpdateCasesTableOperator, operators.UpdateSuspectsTableOperator, operators.UpdateVaccTableOperator]
+    operators = [operators.TestOperator, operators.LoadVaccOperator, operators.LoadCasesOperator, operators.LoadSuspectsOperator, operators.CheckMySqlRecordOperator, operators.UpdateCasesTableOperator, operators.UpdateSuspectsTableOperator, operators.UpdateVaccTableOperator,operators.DataQualityCheckOperator]
+
     helpers = [helpers.LoadTableFunctions]

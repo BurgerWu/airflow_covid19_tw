@@ -50,4 +50,4 @@ class CheckMySqlRecordOperator(BaseOperator):
         self.log.info("The latest value for {} is {}".format(table_of_interest, latest_str))
         
         #Push result date string to xcom
-        context['task_instance'].xcom_push(key='latest', value = latest_str)
+        context['task_instance'].xcom_push(key='latest_' + self.table, value = latest_str)
