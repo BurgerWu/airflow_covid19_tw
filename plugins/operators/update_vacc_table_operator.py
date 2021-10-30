@@ -3,6 +3,7 @@ from airflow.hooks.mysql_hook import MySqlHook
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from datetime import datetime, timedelta
+from db_connections import mysql_connect
 import pandas as pd
 import pymysql.cursors
 from helpers import LoadTableFunctions
@@ -28,8 +29,7 @@ class UpdateVaccTableOperator(BaseOperator):
         """
         #Create MySqlHook to connect to MySql
         mysql_hook = MySqlHook(conn_name_attr = self.db_conn_id)
-        mysql_connection=pymysql.connect(host="127.0.0.1",user='root',password='password',db='airflow',cursorclass=pymysql.cursors.DictCursor)
-
+        mysql_connection = mysql_connect.conn
         #Create Pandas dataframe from Taiwan NCHC
         vacc_table = LoadTableFunctions.get_vaccination_table("https://covid-19.nchc.org.tw/api/covid19?CK=covid-19@nchc.org.tw&querydata=2004", type = 'accumulated')   
         vacc_table['Date'] = pd.to_datetime(vacc_table['Date'])
