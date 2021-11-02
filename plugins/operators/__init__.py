@@ -1,4 +1,3 @@
-from operators.test_operator import TestOperator
 from operators.load_vacc_operator import LoadVaccOperator
 from operators.load_cases_operator import LoadCasesOperator
 from operators.load_suspects_operator import LoadSuspectsOperator
@@ -8,4 +7,4 @@ from operators.update_suspects_table_operator import UpdateSuspectsTableOperator
 from operators.update_vacc_table_operator import UpdateVaccTableOperator
 from operators.data_quality_check_operator import DataQualityCheckOperator
 
-__all__ = ['TestOperator','LoadVaccOperator','LoadCasesOperator','LoadSuspectsOperator','CheckMySqlRecordOperator','UpdateCasesTableOperator','UpdateSuspectsTableOperator','UpdateVaccTableOperator','DataQualityCheckOperator']
+__all__ = ['LoadVaccOperator','LoadCasesOperator','LoadSuspectsOperator','CheckMySqlRecordOperator','UpdateCasesTableOperator','UpdateSuspectsTableOperator','UpdateVaccTableOperator','DataQualityCheckOperator']
