@@ -69,10 +69,10 @@ We extract original data from Taiwanese CDC(covid19_cases and covid19_suspects) 
 
 ### Transform
 The original data contains so much information that we must clean it on our own before starting to use them. Below lists some methods applied to the transformation process.
-- Translation: The orignal data is in traditional Chinese and there is no English version. Thus, we need to do some translation work.
-- Text-Processing: The original data for vaccination is in plain text (from HTML request), therefore we need to process it with text-processing techniques. Also, the original data contains a redundant daily total vaccination row, we also need to clean it out to prevent redundant data.
-- MySQL interaction: For our update tasks, especially vaccination table, we need to query some results from MySQL database for further update action.
-- Data shifting and manipulating: The original vaccination table contains accumulation data only. In order to turn accumulated data into daily data that we care about, we need to shift the data and perform column manipulation.
+- **Translation**: The orignal data is in traditional Chinese and there is no English version. Thus, we need to do some translation work.
+- **Text-Processing**: The original data for vaccination is in plain text (from HTML request), therefore we need to process it with text-processing techniques. Also, the original data contains a redundant daily total vaccination row, we also need to clean it out to prevent redundant data.
+- **MySQL interaction**: For our update tasks, especially vaccination table, we need to query some results from MySQL database for further update action.
+- **Data shifting and manipulating**: The original vaccination table contains accumulation data only. In order to turn accumulated data into daily data that we care about, we need to shift the data and perform column manipulation.
 
 ### Load
 Eventually, we load the transformed table into MySQL database running SQL insert command with MySQLHook in Airflow. 
@@ -82,6 +82,7 @@ Eventually, we load the transformed table into MySQL database running SQL insert
 Below shows the schema of database used in this project. As you see, the date related column are connected. However, this only means these tables are related by the date property. In reality, they are kind of independent tables. Despite the fact that they are independent to each other, we can still join them to get more insights (such as calculating positive rate)
 
 <img src='images/schema.png' height='300'>
+*powered by: <a href='https://www.quickdatabasediagrams.com'>QuickDBD</a>*
 
 ### Models
 Below shows the data dictionary that represents the properties of columns within model. Because the original source of data is not managed by me, I do not set too many constraints in case there be conflicts in the future.
