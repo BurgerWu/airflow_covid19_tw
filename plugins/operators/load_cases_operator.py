@@ -35,12 +35,16 @@ class LoadCasesOperator(BaseOperator):
         
         #Iterate through table to be inserted 
         for values in case_table.values: 
-
+            real_date = values[1].replace('/','-')
             #Append insert segment into original SQL command   
-            sql_insert = sql_insert + "('{}','{}','{}','{}','{}',{}),".format(values[1],values[2],values[4],values[5],values[6],values[7])
+            sql_insert = sql_insert + "('{}','{}','{}','{}','{}',{}),".format(real_date,values[2],values[4],values[5],values[6],values[7])
 
         #Run SQL command using MysqlHook
         mysql_hook.run(sql_insert[:-1])
+
+        f = open('cases.txt', 'w')
+        f.write(sql_insert[:-1])
+        f.close()
 
         #Log insertion information
         self.log.info("Finish loading case table in MySql")
