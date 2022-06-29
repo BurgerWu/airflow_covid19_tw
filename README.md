@@ -77,9 +77,11 @@ The original data contains so much information that we must clean it on our own 
 ### Load
 Eventually, we load the transformed table into MySQL database running SQL insert command with MySQLHook in Airflow. 
 
+The designed update interval of these tables are on a daily basis for the real world update interval is also daily. For some tables, we will update not only the latest record but the latest three days record in order to keep it truly updated.
+
 ## Models and Schema
 ### Schema
-Below shows the schema of database used in this project. As you see, the date related column are connected. However, this only means these tables are related by the date property. In reality, they are kind of independent tables. Despite the fact that they are independent to each other, we can still join them to get more insights (such as calculating positive rate)
+Below shows the schema of database used in this project. As you see, the date related column are connected. However, this only means these tables are related by the date property. In reality, they are kind of independent tables. Despite the fact that they are independent to each other, we can still join them to get more insights (such as calculating positive rate). Also, I deleted some redundant accumulated data to keep tables clean and simple. We can further apply SQL command when we need to calculate those values in web deployment later.
 
 <img src='images/schema.png' height='300'>
 *powered by: <a href='https://www.quickdatabasediagrams.com'>QuickDBD</a>*
@@ -101,6 +103,26 @@ We successfully create the workflow to automatically update covid19 statistics t
 
 Here is the screen shot of the webpage that visualized data acquired from this project
 <img src='images/homepage.png'>
+
+## Follow-Up Discussion
+Below are some discussions of what if conditions in this project
+- **What if the size of data is increased by 100x or even more.**<br>
+If the original data size is increase by 100x or more, we may need to apply distributed computing technologies such as EMR with Spark on AWS. We have done a project using this technology set, please review <a href='https://github.com/BurgerWu/Data-Lake-with-Spark'>here</a> for more information.
+
+- **The pipelines would be run on a daily basis by 7 am every day.**<br>
+By default, if we set schedule interval at daily, the dags will run at midnight of that day. If we want them to execute at specific time daily, we could use cron expression to do so.
+
+```
+dag = DAG(
+    "test",
+    default_args=default_args,
+    description="A test DAG",
+    schedule_interval="0 0 7 * * ?"
+)
+```
+
+- **The database needed to be accessed by 100+ people**<br>
+In this project, the database acts as a internal database for webapp, thus we do not want other people except me to have access to it. However if you want to make it reachable, you may have to properly modify bind-address in MySQL config file and create suitable users and privileges. Also, you may need to configure your networking setting to open port that MySQL uses (default 3306). Then, other users can connect to your MySQL via your IP address and port. If you are interested in detail, you may check <a href='https://www.digitalocean.com/community/tutorials/how-to-allow-remote-access-to-mysql'>this article</a>.
 
 ## Acknowledgement
 Special thanks to Taiwan Center of Disease Control and National Center for High-performance Computing for providing high quality and reliable source data for this porject.
