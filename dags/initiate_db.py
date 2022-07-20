@@ -86,6 +86,7 @@ create_vacc_tables = MySqlOperator(
         Brand VARCHAR(20) NOT NULL,
         First_Dose_Daily int NOT NULL,
         Second_Dose_Daily int NOT NULL,
+        Third_Dose_Beyond_Daily int NOT NULL,
         PRIMARY KEY(Date,Brand))""")
 
 #Insert Daily Cases table

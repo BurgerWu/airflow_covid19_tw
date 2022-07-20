@@ -71,8 +71,12 @@ class LoadTableFunctions:
             raise ValueError("Input for type should be either daily or accumulated")
 
         #Pre-defined column names
-        column_dict = {'id': 'id', 'a01': 'Country', 'a02': 'Date', 'a03':'Brand', 'a04':'First_Dose_Accumulate', 'a05': 'Second_Dose_Accumulate', 'a06':'Total_Vaccination'}
-        brand_dict = {'Oxford\/AstraZeneca': 'AstraZeneca', '高端': 'Medigen', 'BNT': 'BNT', 'Moderna':'Moderna'}
+        column_dict = {'id': 'id', 'a01': 'Country', 'a02': 'Date',\
+                      'a03':'Brand', 'a04':'First_Dose_Accumulate', \
+                      'a05':'Second_Dose_Accumulate', 'a06':'First_Booster_Accumulate', \
+                      'a07':'First_Additional_Accumulate', 'a08':'Second_Booster_Accumulate', \
+                      'a09':'Second_Additional_Accumulate', 'a10':'Total_Vaccination'}
+        brand_dict = {'Oxford\/AstraZeneca': 'AstraZeneca', '高端': 'Medigen', 'BNT': 'BNT', 'Moderna':'Moderna', 'Novavax':'Novavax'}
 
         #Use get method in requests to acquire vaccination data
         vacc_content = requests.get(url)
@@ -107,16 +111,29 @@ class LoadTableFunctions:
         vacc_table['id'] = vacc_table['id'].astype(int)
         vacc_table['First_Dose_Accumulate'] = vacc_table['First_Dose_Accumulate'].astype(int)
         vacc_table['Second_Dose_Accumulate'] = vacc_table['Second_Dose_Accumulate'].astype(int)
+        vacc_table['First_Booster_Accumulate'] = vacc_table['First_Booster_Accumulate'].astype(int)
+        vacc_table['Second_Booster_Accumulate'] = vacc_table['Second_Booster_Accumulate'].astype(int)
+        vacc_table['First_Additional_Accumulate'] = vacc_table['First_Additional_Accumulate'].astype(int)
+        vacc_table['Second_Additional_Accumulate'] = vacc_table['Second_Additional_Accumulate'].astype(int)
         vacc_table['Total_Vaccination'] = vacc_table['Total_Vaccination'].astype(int)
 
         if type == 'daily':
             #Calculate daily vaccination counts
             vacc_table['fd'] = vacc_table.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1).fillna(0)
             vacc_table['sd'] = vacc_table.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1).fillna(0)
+            vacc_table['fbd'] = vacc_table.sort_values('Date').groupby('Brand')['First_Booster_Accumulate'].shift(1).fillna(0)
+            vacc_table['sbd'] = vacc_table.sort_values('Date').groupby('Brand')['Second_Booster_Accumulate'].shift(1).fillna(0)
+            vacc_table['fad'] = vacc_table.sort_values('Date').groupby('Brand')['First_Additional_Accumulate'].shift(1).fillna(0)
+            vacc_table['sad'] = vacc_table.sort_values('Date').groupby('Brand')['Second_Additional_Accumulate'].shift(1).fillna(0)
             vacc_table['First_Dose_Daily'] = vacc_table['First_Dose_Accumulate'] - vacc_table['fd']
             vacc_table['Second_Dose_Daily'] = vacc_table['Second_Dose_Accumulate'] - vacc_table['sd']
-            vacc_table['Total_Vaccinated_Daily'] = vacc_table['First_Dose_Daily'] + vacc_table['Second_Dose_Daily']
-            vacc_table = vacc_table.drop(labels=['fd','sd'],axis=1)
+            vacc_table['First_Booster_Daily'] = vacc_table['First_Booster_Accumulate'] - vacc_table['fbd']
+            vacc_table['Second_Booster_Daily'] = vacc_table['Second_Booster_Accumulate'] - vacc_table['sbd']
+            vacc_table['First_Additional_Daily'] = vacc_table['First_Additional_Accumulate'] - vacc_table['fad']
+            vacc_table['Second_Additional_Daily'] = vacc_table['Second_Additional_Accumulate'] - vacc_table['sad']            
+            vacc_table['Third_Dose_Beyond_Daily'] = vacc_table['First_Booster_Daily'] + vacc_table['Second_Booster_Daily'] +vacc_table['First_Additional_Daily'] + vacc_table['Second_Additional_Daily']       
+            vacc_table['Total_Vaccinated_Daily'] = vacc_table['First_Dose_Daily'] + vacc_table['Second_Dose_Daily'] + vacc_table['Third_Dose_Beyond_Daily']          
+            vacc_table = vacc_table.drop(labels=['fd','sd','fbd','sbd','fad','sad'],axis=1)
         else:
             #Do not modify if type is accumulated
             pass
@@ -134,7 +151,8 @@ class LoadTableFunctions:
         with mysql_connection.cursor() as cursor:
             sql = """SELECT Brand, max(Date) AS Date,
                      sum(First_Dose_Daily) AS First_Dose_Accumulate,
-                     sum(Second_Dose_Daily) AS Second_Dose_Accumulate 
+                     sum(Second_Dose_Daily) AS Second_Dose_Accumulate,
+                     sum(Third_Dose_Beyond_Daily) AS Third_Dose_Beyond_Accumulate
                      FROM covid19_vaccination 
                      WHERE Date <= '{}'
                      GROUP BY (Brand)""".format(to_update_date_str)
@@ -154,28 +172,37 @@ class LoadTableFunctions:
         to_update_vacc = vacc_table[vacc_table['Date'] > to_update_date]
 
         #Shift accumulated data one row backward so that we can calculate daily data later 
-        to_update_vacc['fd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1)
-        to_update_vacc['sd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1)
-        to_update_brands = list(to_update_vacc[to_update_vacc['fd'].isna()]['Brand'].unique())
+        #to_update_vacc['fd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Dose_Accumulate'].shift(1)
+        #to_update_vacc['sd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Dose_Accumulate'].shift(1)
+        #to_update_vacc['fbd'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Booster_Accumulate'].shift(1).fillna(0)
+        #to_update_vacc['sbd'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Booster_Accumulate'].shift(1).fillna(0)
+        #to_update_vacc['fad'] = to_update_vacc.sort_values('Date').groupby('Brand')['First_Additional_Accumulate'].shift(1).fillna(0)
+        #to_update_vacc['sad'] = to_update_vacc.sort_values('Date').groupby('Brand')['Second_Additional_Accumulate'].shift(1).fillna(0)
+        #to_update_vacc['tbd'] = to_update_vacc['fbd'] + to_update_vacc['sbd'] + to_update_vacc['fad'] + to_update_vacc['sad']
+        #to_update_brands = list(to_update_vacc[to_update_vacc['fd'].isna()]['Brand'].unique())
         
         #To populate accumulate data for the first row in our subset of to_update table
-        for items in mysql_accu_dict:
-            if items['Brand'] in to_update_brands:
-                to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['First_Dose_Accumulate'])
-                to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Second_Dose_Accumulate'])
-                to_update_brands.remove(items['Brand'])
+        #for items in mysql_accu_dict:
+        #    if items['Brand'] in to_update_brands:
+        #        to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['fd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['First_Dose_Accumulate'])
+        #        to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['sd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Second_Dose_Accumulate'])
+        #        to_update_vacc['tbd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['tbd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Third_Dose_Beyond_Accumulate'])
+        #        to_update_brands.remove(items['Brand'])
 
         #If there is a new added vaccine, we put 0 as the accumulated data for the first day
-        if len(to_update_brands) != 0:
-            for brand in to_update_brands:
-                to_update_vacc['fd'][to_update_vacc['Brand'] == brand] = to_update_vacc['fd'][to_update_vacc['Brand'] == brand].fillna(0)
-                to_update_vacc['sd'][to_update_vacc['Brand'] == brand] = to_update_vacc['sd'][to_update_vacc['Brand'] == brand].fillna(0)
+        #if len(to_update_brands) != 0:
+        #    for brand in to_update_brands:
+        #        to_update_vacc['fd'][to_update_vacc['Brand'] == brand] = to_update_vacc['fd'][to_update_vacc['Brand'] == brand].fillna(0)
+        #        to_update_vacc['sd'][to_update_vacc['Brand'] == brand] = to_update_vacc['sd'][to_update_vacc['Brand'] == brand].fillna(0)
+        #        to_update_vacc['tbd'][to_update_vacc['Brand'] == items['Brand']] = to_update_vacc['tbd'][to_update_vacc['Brand'] == items['Brand']].fillna(items['Third_Dose_Beyond_Accumulate'])
+
 
         #Subtract accumulated data with accumulated data one day before to get daily data on that day
-        to_update_vacc['First_Dose_Daily'] = to_update_vacc['First_Dose_Accumulate'] - to_update_vacc['fd']
-        to_update_vacc['Second_Dose_Daily'] = to_update_vacc['Second_Dose_Accumulate'] - to_update_vacc['sd']
-        to_update_vacc['Total_Vaccinated_Daily'] = to_update_vacc['First_Dose_Daily'] + to_update_vacc['Second_Dose_Daily']
-        to_update_vacc = to_update_vacc.drop(labels=['fd','sd'],axis=1)
+        #to_update_vacc['First_Dose_Daily'] = to_update_vacc['First_Dose_Accumulate'] - to_update_vacc['fd']
+        #to_update_vacc['Second_Dose_Daily'] = to_update_vacc['Second_Dose_Accumulate'] - to_update_vacc['sd']
+        #to_update_vacc['Third_Dose_Beyond_Daily'] = to_update_vacc['Third_Dose_Beyond_Accumulate'] - to_update_vacc['tbd']
+        #to_update_vacc['Total_Vaccinated_Daily'] = to_update_vacc['First_Dose_Daily'] + to_update_vacc['Second_Dose_Daily'] + to_update_vacc['Third_Dose_Beyond_Daily']
+        #to_update_vacc = to_update_vacc.drop(labels=['fd','sd'],axis=1)
 
         return to_update_vacc
 
