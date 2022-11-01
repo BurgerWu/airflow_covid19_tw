@@ -31,11 +31,11 @@ class LoadVaccOperator(BaseOperator):
 
         #Initiate SQL insert command
         self.log.info("Start writing vaccination table to MySql")
-        sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily) VALUES """
+        sql_insert = """INSERT INTO covid19_vaccination (Date,Brand,First_Dose_Daily,Second_Dose_Daily,Third_Dose_Beyond_Daily) VALUES """
         
         #Iterate through table to be inserted 
         for values in vacc_table.values:    
-           sql_insert = sql_insert + "('{}','{}',{},{}),".format(values[2], values[3], values[7], values[8])
+           sql_insert = sql_insert + "('{}','{}',{},{},{}),".format(values[2], values[3], values[11], values[12], values[17])
 
         #Run SQL command using MysqlHook
         mysql_hook.run(sql_insert[:-1])
