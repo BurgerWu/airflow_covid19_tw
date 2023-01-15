@@ -7,7 +7,7 @@ Covid -19 has changed people's life since 2020. For Taiwan, aka my home town, 20
 ## Introduction
 This repository contains dags folder and plugins required to complete the project task. You can also move relevant files within the folder to your own airflow folder, and it should also work just fine. Within dags folder, there are dag py files that defines the tasks of initializing database, update and data check. Within operators folder, there are two main sub folder called helpers and operators. Helpers contains helper function that our operator can call. Operators folder contains custom operators that does jobs not available(or intentionally make it new operator) with default operators.
 
-The data of this project will be visualized in web page using Django framework in another project repository, you may check <a href='https://github.com/BurgerWu/Covid19_Django_Webapp'>here</a> for more information.
+The data of this project will be visualized in web page using Django framework in another project repository, you may check <a href='https://github.com/BurgerWu/Covid19_Django_Webapp'>here</a> for more information. Now a docker-compose version of these two projects is available at this <a href='https://github.com/BurgerWu/Covid19_Taiwan_Dashboard_Docker_Compose'>repository</a>
 
 ## Airflow Settings and Run Dags Locally
 ### Installation of Airflow
@@ -103,6 +103,8 @@ We successfully create the workflow to automatically update covid19 statistics t
 
 Here is the screen shot of the webpage that visualized data acquired from this project
 <img src='images/homepage.png'>
+
+You are welcome to visit the full integration using docker-compose at this <a href='https://github.com/BurgerWu/Covid19_Taiwan_Dashboard_Docker_Compose'>repository</a>
 
 ## Acknowledgement
 Special thanks to Taiwan Center of Disease Control and National Center for High-performance Computing for providing high quality and reliable source data for this porject.
